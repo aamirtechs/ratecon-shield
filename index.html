@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RateCon Shield, Rate Confirmation vs BOL Mismatch Checker</title>
+<meta name="description" content="RateCon Shield compares a rate confirmation against the bill of lading, field by field, to catch the paperwork mismatches that signal double brokering. Local only, no accounts, no uploads.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#071120; --bg2:#0a1830; --card:#0e2142; --card2:#12294f; --line:#1e3a66;
+  --gold:#c9a227; --gold2:#e8c766; --gold-soft:rgba(201,162,39,.14);
+  --text:#eef2f8; --muted:#9db0cc; --muted2:#6f84a6;
+  --green:#34c98e; --green-soft:rgba(52,201,142,.13); --red:#ff5d6c; --red-soft:rgba(255,93,108,.12);
+  --amber:#ffb454; --amber-soft:rgba(255,180,84,.13); --blue:#5ea8ff;
+  --radius:16px; --shadow:0 18px 40px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(1000px 500px at 15% -10%, #17335f 0, transparent 60%), radial-gradient(900px 500px at 90% 0, rgba(201,162,39,.12) 0, transparent 55%), var(--bg);color:var(--text);font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:15px;line-height:1.55}
+h1,h2,h3,.display{font-family:"Sora",sans-serif;letter-spacing:-.02em}
+.mono{font-family:"IBM Plex Mono",monospace}
+.wrap{max-width:1240px;margin:0 auto;padding:0 20px 64px}
+header{position:sticky;top:0;z-index:30;background:rgba(7,17,32,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.header-in{max-width:1240px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:13px}
+.logo{width:46px;height:46px;border-radius:13px;background:linear-gradient(145deg,var(--gold2),var(--gold));display:grid;place-items:center;font-family:"Sora",sans-serif;font-weight:800;color:#0a1830;font-size:19px;box-shadow:0 8px 24px rgba(201,162,39,.35)}
+.brand h1{font-size:21px;margin:0;line-height:1.1}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:12.5px}
+.header-actions{display:flex;gap:9px;flex-wrap:wrap}
+.btn{appearance:none;border:1px solid var(--line);background:var(--card2);color:var(--text);padding:10px 16px;border-radius:11px;font-family:inherit;font-weight:700;font-size:13.5px;cursor:pointer;transition:.15s}
+.btn:hover{border-color:var(--gold);transform:translateY(-1px)}
+.btn-gold{background:linear-gradient(145deg,var(--gold2),var(--gold));color:#0a1830;border-color:transparent}
+.btn-danger{background:transparent;border-color:rgba(255,93,108,.5);color:#ff9aa4}
+.btn-danger:hover{border-color:var(--red)}
+.btn-small{padding:7px 11px;font-size:12.5px;border-radius:9px}
+.btn-ghost{background:transparent}
+.hero{padding:34px 0 6px}
+.hero-card{background:linear-gradient(145deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:20px;padding:28px;box-shadow:var(--shadow)}
+.hero-card h2{font-size:30px;line-height:1.14;margin:0 0 12px}
+.hero-card h2 span{color:var(--gold2)}
+.hero-card p{color:var(--muted);margin:0 0 16px;max-width:72ch}
+.pill{display:inline-flex;align-items:center;gap:7px;background:var(--gold-soft);color:var(--gold2);border:1px solid rgba(201,162,39,.35);padding:5px 11px;border-radius:999px;font-size:12px;font-weight:700;margin-bottom:14px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.hero-actions{display:flex;gap:10px;flex-wrap:wrap}
+.section{margin-top:28px}
+.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.section-head h2{font-size:21px;margin:0}
+.section-head p{margin:3px 0 0;color:var(--muted);font-size:13.5px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:900px){.grid-2{grid-template-columns:1fr}}
+label{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:6px;letter-spacing:.02em}
+input,textarea{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px 12px;font-family:inherit;font-size:14px;outline:none}
+input:focus,textarea:focus{border-color:var(--gold)}
+textarea{resize:vertical;min-height:96px;font-size:13px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid .span-2{grid-column:span 2}
+@media(max-width:560px){.form-grid{grid-template-columns:1fr}.form-grid .span-2{grid-column:span 1}}
+.panel-tag{display:inline-flex;padding:4px 10px;border-radius:999px;font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;background:var(--gold-soft);color:var(--gold2);border:1px solid rgba(201,162,39,.35);margin-bottom:12px}
+.panel-tag.bol{background:rgba(94,168,255,.13);color:#9ec9ff;border-color:rgba(94,168,255,.4)}
+.paste-zone{margin-top:16px;border-top:1px dashed var(--line);padding-top:16px}
+.extract-box{display:none;margin-top:12px;background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:13px}
+.extract-box.show{display:block}
+.extract-box h4{margin:0 0 8px;font-size:13px;font-family:"Sora",sans-serif}
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chip{background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;font-family:"IBM Plex Mono",monospace}
+.chip b{color:var(--gold2);font-weight:600}
+.extract-actions{margin-top:11px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.hint{color:var(--muted2);font-size:12.5px}
+.flags{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:760px){.flags{grid-template-columns:1fr}}
+.flag{display:flex;gap:11px;background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:12px 14px;cursor:pointer;align-items:flex-start}
+.flag:hover{border-color:var(--gold)}
+.flag input{width:auto;margin-top:3px;accent-color:var(--gold)}
+.flag .ft{font-weight:700;font-size:13.5px}
+.flag .fd{color:var(--muted);font-size:12.5px}
+.compare-bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:center;margin-top:6px}
+.compare-bar .btn{font-size:15px;padding:13px 26px}
+.verdict{display:none;margin-top:14px;border-radius:18px;padding:24px;border:1px solid var(--line);background:var(--card)}
+.verdict.show{display:block}
+.verdict.pass{border-color:rgba(52,201,142,.55);box-shadow:0 0 0 1px rgba(52,201,142,.35) inset}
+.verdict.caution{border-color:rgba(255,180,84,.55);box-shadow:0 0 0 1px rgba(255,180,84,.3) inset}
+.verdict.fail{border-color:rgba(255,93,108,.6);box-shadow:0 0 0 1px rgba(255,93,108,.35) inset}
+.verdict-top{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.score-ring{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;background:var(--bg2);border:3px solid var(--line);flex:none}
+.score-ring .num{font-family:"Sora",sans-serif;font-size:30px;font-weight:800;line-height:1}
+.score-ring .of{font-size:10.5px;color:var(--muted2);letter-spacing:.08em}
+.verdict.pass .score-ring{border-color:var(--green)} .verdict.pass .score-ring .num{color:var(--green)}
+.verdict.caution .score-ring{border-color:var(--amber)} .verdict.caution .score-ring .num{color:var(--amber)}
+.verdict.fail .score-ring{border-color:var(--red)} .verdict.fail .score-ring .num{color:var(--red)}
+.band{font-family:"Sora",sans-serif;font-size:26px;font-weight:800;letter-spacing:.02em}
+.verdict.pass .band{color:var(--green)} .verdict.caution .band{color:var(--amber)} .verdict.fail .band{color:var(--red)}
+.verdict-sub{color:var(--muted);margin:4px 0 0;max-width:62ch}
+.reasons{margin:16px 0 0;padding:0;list-style:none;display:grid;gap:9px}
+.reasons li{background:var(--bg2);border:1px solid var(--line);border-left:4px solid var(--amber);border-radius:10px;padding:11px 14px;font-size:13.5px}
+.reasons li.crit{border-left-color:var(--red)}
+.reasons li.ok{border-left-color:var(--green)}
+.reasons li b{color:var(--text)}
+table.cmp{width:100%;border-collapse:collapse;margin-top:16px;font-size:13.5px}
+table.cmp th,table.cmp td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+table.cmp th{background:var(--bg2);font-family:"Sora",sans-serif;font-size:12.5px;letter-spacing:.03em}
+table.cmp td.val{font-family:"IBM Plex Mono",monospace;font-size:12.5px;word-break:break-word}
+.status{display:inline-flex;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+.status.match{background:var(--green-soft);color:#7fe3ba}
+.status.mismatch{background:var(--red-soft);color:#ff9aa4}
+.status.partial{background:var(--amber-soft);color:var(--amber)}
+.status.missing{background:var(--bg2);color:var(--muted)}
+.history-list{display:grid;gap:10px}
+.hist-row{display:flex;justify-content:space-between;gap:12px;align-items:center;background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:12px 14px;flex-wrap:wrap}
+.hist-row .who{font-weight:700}
+.hist-row .meta{color:var(--muted);font-size:12.5px}
+.hist-score{font-family:"IBM Plex Mono",monospace;font-weight:600}
+.empty{color:var(--muted);background:var(--bg2);border:1px dashed var(--line);border-radius:11px;padding:16px;text-align:center;font-size:13.5px}
+.demo-note{display:none;background:var(--amber-soft);border:1px solid rgba(255,180,84,.45);color:var(--amber);border-radius:11px;padding:11px 14px;font-size:13px;font-weight:700;margin-top:14px}
+.demo-note.show{display:block}
+footer{border-top:1px solid var(--line);margin-top:44px}
+.footer-in{max-width:1240px;margin:0 auto;padding:22px 20px;color:var(--muted2);font-size:12.5px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+#print-report{display:none}
+@media print{
+  body{background:#fff;color:#111}
+  header,.no-print{display:none !important}
+  #print-report{display:block;font-family:Georgia,serif;color:#111}
+  #print-report h1{font-size:22px;margin:0 0 4px}
+  #print-report h2{font-size:16px;margin:20px 0 8px;border-bottom:2px solid #111;padding-bottom:4px}
+  #print-report table{width:100%;border-collapse:collapse;font-size:12.5px}
+  #print-report th,#print-report td{border:1px solid #999;padding:6px 8px;text-align:left;vertical-align:top}
+  #print-report .foot{margin-top:26px;border-top:1px solid #999;padding-top:10px;font-size:12px;color:#333}
+  #print-report .verdict-line{font-size:18px;font-weight:bold}
+}
+</style>
+</head>
+<body>
+<header class="no-print">
+  <div class="header-in">
+    <div class="brand">
+      <div class="logo">RS</div>
+      <div>
+        <h1>RateCon Shield</h1>
+        <p>Rate confirmation vs BOL mismatch checker. Local only.</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-small" id="btn-demo-match" type="button">Demo: matching pair</button>
+      <button class="btn btn-small" id="btn-demo-mismatch" type="button">Demo: mismatched pair</button>
+      <button class="btn btn-small btn-gold" id="btn-print-top" type="button">Print report</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="hero no-print">
+    <div class="hero-card">
+      <span class="pill"><span class="dot"></span> Private by design. Nothing you paste leaves this device.</span>
+      <h2>Double brokers hide in the <span>paperwork.</span> Catch the mismatch before you roll.</h2>
+      <p>The classic double brokering tell is simple: the rate confirmation, the load details and the bill of lading name different companies, different MC numbers or different rates. Paste or type both documents below, compare them field by field, and get a plain language verdict before the truck moves.</p>
+      <div class="hero-actions">
+        <button class="btn btn-gold" id="btn-scroll-compare" type="button">Start a check</button>
+        <span class="hint" style="align-self:center">No accounts. No uploads. No server. History stays in this browser.</span>
+      </div>
+      <div class="demo-note" id="demo-note">Demo data loaded. These are sample documents, clearly fake, shown so you can see the PASS and FAIL paths. Clear them any time with the Clear forms button.</div>
+    </div>
+  </section>
+
+  <section class="section no-print" id="docs">
+    <div class="section-head">
+      <div>
+        <h2>The two documents</h2>
+        <p>Type the fields, or paste the full text of each document and let the extractor pull the numbers out for you to confirm.</p>
+      </div>
+      <button class="btn btn-small btn-ghost" id="btn-clear-forms" type="button">Clear forms</button>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <span class="panel-tag">Document A</span>
+        <h3 style="margin:0 0 14px">Rate Confirmation</h3>
+        <div class="form-grid" id="rc-fields"></div>
+        <div class="paste-zone">
+          <label for="rc-paste">Paste rate confirmation text</label>
+          <textarea id="rc-paste" placeholder="Paste the rate con email or text here. MC numbers, DOT numbers, rates, phones and emails are pulled out automatically."></textarea>
+          <div class="extract-box" id="rc-extract-box">
+            <h4>Extracted from your paste, confirm before comparing</h4>
+            <div class="chips" id="rc-chips"></div>
+            <div class="extract-actions">
+              <button class="btn btn-small btn-gold" id="rc-apply" type="button">Apply to empty fields</button>
+              <span class="hint">Only blank fields are filled. Your typed values are never overwritten.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <span class="panel-tag bol">Document B</span>
+        <h3 style="margin:0 0 14px">BOL / Load Details</h3>
+        <div class="form-grid" id="bol-fields"></div>
+        <div class="paste-zone">
+          <label for="bol-paste">Paste BOL or load details text</label>
+          <textarea id="bol-paste" placeholder="Paste the BOL text, load tender or dispatch notes here. Same automatic extraction applies."></textarea>
+          <div class="extract-box" id="bol-extract-box">
+            <h4>Extracted from your paste, confirm before comparing</h4>
+            <div class="chips" id="bol-chips"></div>
+            <div class="extract-actions">
+              <button class="btn btn-small btn-gold" id="bol-apply" type="button">Apply to empty fields</button>
+              <span class="hint">Only blank fields are filled. Your typed values are never overwritten.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section no-print" id="flags-section">
+    <div class="section-head">
+      <div>
+        <h2>Red flag checklist</h2>
+        <p>Eight checks no document comparison can do for you. Tick anything you have noticed on this load. Ticked flags count toward the risk picture and appear in the report.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="flags" id="flags"></div>
+    </div>
+  </section>
+
+  <section class="section no-print" id="compare-section">
+    <div class="compare-bar">
+      <button class="btn btn-gold" id="btn-compare" type="button">Compare the documents</button>
+      <button class="btn" id="btn-print" type="button">Print verification report</button>
+    </div>
+    <div class="verdict" id="verdict-box">
+      <div class="verdict-top">
+        <div class="score-ring"><div><div class="num" id="v-score">0</div><div class="of">OUT OF 100</div></div></div>
+        <div>
+          <div class="band" id="v-band">NOT RUN</div>
+          <p class="verdict-sub" id="v-sub"></p>
+        </div>
+      </div>
+      <ul class="reasons" id="v-reasons"></ul>
+      <div style="overflow-x:auto">
+        <table class="cmp">
+          <thead><tr><th>Field</th><th>Rate Confirmation</th><th>BOL / Load Details</th><th>Status</th></tr></thead>
+          <tbody id="v-table"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section no-print" id="history-section">
+    <div class="section-head">
+      <div>
+        <h2>Check history</h2>
+        <p>Every comparison you run is saved here, in this browser only.</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-small" id="btn-csv" type="button">Export history CSV</button>
+        <button class="btn btn-small btn-danger" id="btn-clear-history" type="button">Clear history</button>
+      </div>
+    </div>
+    <div class="history-list" id="history-list"></div>
+  </section>
+</div>
+
+<footer class="no-print">
+  <div class="footer-in">
+    <span>RateCon Shield v1.0.0, a Dispatch Authority tool. Sibling products: SAFER USDOT Extractor and Load Board Fraud Lens.</span>
+    <span>Checked locally with RateCon Shield, no data left this device.</span>
+  </div>
+</footer>
+
+<div id="print-report"></div>
+
+<script>
+"use strict";
+/* RateCon Shield v1.0.0. Pure client side. Documents never leave this device. */
+
+var FIELDS = [
+  { key: "company",  label: "Company name",    critical: true,  kind: "company" },
+  { key: "mc",       label: "MC number",       critical: true,  kind: "num" },
+  { key: "dot",      label: "DOT number",      critical: true,  kind: "num" },
+  { key: "address",  label: "Address",         critical: false, kind: "address" },
+  { key: "phone",    label: "Phone",           critical: false, kind: "phone" },
+  { key: "email",    label: "Email",           critical: false, kind: "email" },
+  { key: "loadRef",  label: "Load reference",  critical: false, kind: "text" },
+  { key: "rate",     label: "Rate amount",     critical: false, kind: "money" },
+  { key: "pickup",   label: "Pickup city / state",   critical: false, kind: "text" },
+  { key: "delivery", label: "Delivery city / state", critical: false, kind: "text" }
+];
+
+var FLAG_DEFS = [
+  { id: "newmc",    title: "Broker MC is brand new", desc: "Authority granted very recently. New MCs are a common vehicle for one-shot fraud." },
+  { id: "highrate", title: "Rate is far above market", desc: "A rate that looks too good usually is. Overpaying is how a double broker buys a fast yes." },
+  { id: "freeemail",title: "Broker uses a free email domain", desc: "Gmail, Yahoo or Outlook addresses for a broker business are a classic warning sign." },
+  { id: "pressure", title: "Pressure to book fast", desc: "Rushed booking stops you checking. Legitimate brokers survive a ten minute verification." },
+  { id: "factorchg",title: "Factoring company changed", desc: "Payment instructions or factoring details that differ from the normal pattern deserve a call to the known number." },
+  { id: "warehouse",title: "Pickup address does not match the shipper", desc: "A warehouse or cross dock that is not the named shipper can be where the load changes hands off paper." },
+  { id: "noshipper",title: "Told not to contact the shipper", desc: "Being asked to keep the shipper out of the loop removes the one party who can confirm the real broker." },
+  { id: "remitdiff",title: "Remittance name differs", desc: "The name you are told to pay, or that appears on payment paperwork, is not the company on the rate con." }
+];
+
+var SUFFIXES = ["inc","llc","ltd","corp","corporation","co","company","llp","lp","pc","incorporated"];
+
+function normalizeText(s) {
+  if (s == null) return "";
+  var t = String(s).toLowerCase();
+  t = t.replace(/[^a-z0-9 ]+/g, " ");
+  t = t.replace(/\s+/g, " ").trim();
+  if (!t) return "";
+  var parts = t.split(" ");
+  while (parts.length > 1 && SUFFIXES.indexOf(parts[parts.length - 1]) !== -1) {
+    parts.pop();
+  }
+  return parts.join(" ");
+}
+
+function normalizeNum(s) {
+  if (s == null) return "";
+  return String(s).replace(/[^0-9]/g, "").replace(/^0+/, "");
+}
+
+function normalizeMoney(s) {
+  if (s == null) return null;
+  var t = String(s).replace(/[^0-9.]/g, "");
+  if (!t) return null;
+  var n = parseFloat(t);
+  return isNaN(n) ? null : n;
+}
+
+function normalizePhone(s) {
+  var d = String(s == null ? "" : s).replace(/[^0-9]/g, "");
+  if (d.length === 11 && d.charAt(0) === "1") d = d.slice(1);
+  return d;
+}
+
+function tokenOverlap(a, b) {
+  var ta = normalizeText(a).split(" ").filter(Boolean);
+  var tb = normalizeText(b).split(" ").filter(Boolean);
+  if (!ta.length || !tb.length) return 0;
+  var setB = {};
+  tb.forEach(function (w) { setB[w] = true; });
+  var shared = 0;
+  var seen = {};
+  ta.forEach(function (w) { if (setB[w] && !seen[w]) { shared++; seen[w] = true; } });
+  var union = {};
+  ta.concat(tb).forEach(function (w) { union[w] = true; });
+  return shared / Object.keys(union).length;
+}
+
+function stemToken(w) {
+  if (w.length > 3 && w.charAt(w.length - 1) === "s") return w.slice(0, -1);
+  return w;
+}
+
+function tokenSet(a, stem) {
+  var set = {};
+  normalizeText(a).split(" ").filter(Boolean).forEach(function (w) { set[stem ? stemToken(w) : w] = true; });
+  return set;
+}
+
+function setOverlap(a, b, stem) {
+  var sa = tokenSet(a, stem), sb = tokenSet(b, stem);
+  var ka = Object.keys(sa), kb = Object.keys(sb);
+  if (!ka.length || !kb.length) return 0;
+  var shared = 0;
+  ka.forEach(function (w) { if (sb[w]) shared++; });
+  var union = {};
+  ka.concat(kb).forEach(function (w) { union[w] = true; });
+  return shared / Object.keys(union).length;
+}
+
+function extractFields(text) {
+  var out = { mc: "", dot: "", money: "", phone: "", email: "", zip: "", state: "" };
+  if (!text) return out;
+  var t = String(text);
+  var m;
+  m = t.match(/\bMC[\s#:\-]*([0-9]{4,8})\b/i);
+  if (m) out.mc = m[1];
+  m = t.match(/\b(?:USDOT|US DOT|DOT)[\s#:\-]*([0-9]{4,8})\b/i);
+  if (m) out.dot = m[1];
+  m = t.match(/\$\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})|[0-9]+(?:\.[0-9]{2})?)/);
+  if (m) out.money = m[1].replace(/,/g, "");
+  m = t.match(/(?:\+?1[\s.\-]?)?\(?([0-9]{3})\)?[\s.\-]([0-9]{3})[\s.\-]([0-9]{4})/);
+  if (m) out.phone = m[1] + "-" + m[2] + "-" + m[3];
+  m = t.match(/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/i);
+  if (m) out.email = m[0];
+  m = t.match(/\b(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)[\s,]+([0-9]{5})(?:-[0-9]{4})?\b/);
+  if (!m) m = t.match(/\bZIP[\s:]*([0-9]{5})\b/i);
+  if (!m) m = t.match(/(?<![0-9A-Za-z\-])([0-9]{5})(?:-[0-9]{4})?\b/);
+  if (m) out.zip = m[1];
+  m = t.match(/\b(AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)\b/);
+  if (m) out.state = m[1].toUpperCase();
+  return out;
+}
+
+function fieldStatus(field, a, b) {
+  var av = a == null ? "" : String(a).trim();
+  var bv = b == null ? "" : String(b).trim();
+  if (!av && !bv) return { status: "missing", note: "Not on either document" };
+  if (!av || !bv) return { status: "missing", note: av ? "Missing on BOL" : "Missing on rate con" };
+  switch (field.kind) {
+    case "company": {
+      var ov = tokenOverlap(av, bv);
+      var ovStem = setOverlap(av, bv, true);
+      if (normalizeText(av) === normalizeText(bv)) return { status: "match", note: "" };
+      if (ovStem >= 0.99) return { status: "partial", note: "Same root name, different word form (" + Math.round(ovStem * 100) + "% stem overlap). Verify the exact legal name." };
+      if (ov >= 0.5) return { status: "partial", note: "Similar names, not identical (" + Math.round(ov * 100) + "% overlap)" };
+      return { status: "mismatch", note: "Different companies (" + Math.round(ov * 100) + "% overlap)" };
+    }
+    case "num":
+      return normalizeNum(av) === normalizeNum(bv) ? { status: "match", note: "" } : { status: "mismatch", note: "Numbers differ" };
+    case "money": {
+      var ma = normalizeMoney(av), mb = normalizeMoney(bv);
+      if (ma != null && mb != null) {
+        return Math.abs(ma - mb) < 1 ? { status: "match", note: "" } : { status: "mismatch", note: "Rate differs by $" + Math.abs(ma - mb).toFixed(2) };
+      }
+      return normalizeText(av) === normalizeText(bv) ? { status: "match", note: "" } : { status: "mismatch", note: "Rate differs" };
+    }
+    case "phone":
+      return normalizePhone(av) === normalizePhone(bv) ? { status: "match", note: "" } : { status: "mismatch", note: "Phone numbers differ" };
+    case "email":
+      return av.toLowerCase() === bv.toLowerCase() ? { status: "match", note: "" } : { status: "mismatch", note: "Emails differ" };
+    case "address": {
+      var oa = tokenOverlap(av, bv);
+      var za = (av.match(/[0-9]{5}/) || [""])[0], zb = (bv.match(/[0-9]{5}/) || [""])[0];
+      if (za && zb && za !== zb) return { status: "mismatch", note: "ZIP codes differ" };
+      if (oa >= 0.6) return { status: "match", note: "" };
+      if (oa >= 0.35) return { status: "partial", note: "Addresses partly match" };
+      return { status: "mismatch", note: "Addresses differ" };
+    }
+    default: {
+      if (normalizeText(av) === normalizeText(bv)) return { status: "match", note: "" };
+      var ot = tokenOverlap(av, bv);
+      if (ot >= 0.5) return { status: "partial", note: "Mostly matches" };
+      return { status: "mismatch", note: "Values differ" };
+    }
+  }
+}
+
+var WHY = {
+  company: "The rate con and the BOL name different companies. In a double brokering scheme the load is re-sold under a second identity, so the paperwork trail names more than one business. Confirm directly with the broker on the rate con, using a number you already trust, before the truck is loaded.",
+  mc: "The MC numbers do not match. An MC number is the operating authority the payment and the liability attach to. Two different MCs means two different authorities are in the chain, which is the signature of a re-brokered load.",
+  dot: "The DOT numbers do not match. DOT identity should follow the same carrier or broker across every document on one load. A second DOT number means a second company is in the paperwork.",
+  rate: "The rate on the BOL or load details differs from the rate con. Double brokers skim the difference between what the real broker pays and what the carrier is shown, and the skim shows up as two different rates on two documents.",
+  address: "The addresses differ. Payment, factoring and dispute paperwork all follow the address on file. A different address can mean remittance is being routed somewhere the real broker never sees.",
+  phone: "The phone numbers differ. Callbacks that land on a different number than the broker of record are how carriers end up taking instructions from someone who is not in the contract chain.",
+  email: "The email addresses differ. Instructions and revised rate cons sent from a lookalike or unrelated address are a common way to keep the real broker out of the conversation.",
+  loadRef: "The load references differ. Mismatched reference numbers make the load hard to trace and are often how a re-brokered load is kept separate from the original booking.",
+  pickup: "The pickup locations differ between documents. A changed pickup is where a load physically changes hands off the original paperwork.",
+  delivery: "The delivery locations differ between documents. If the BOL delivers somewhere the rate con never named, the load is not moving on the contract you signed."
+};
+
+function compareDocs(rc, bol, checkedFlags) {
+  var rows = [];
+  var score = 100;
+  var reasons = [];
+  var hasFail = false;
+  var hasCaution = false;
+  FIELDS.forEach(function (f) {
+    var r = fieldStatus(f, rc[f.key], bol[f.key]);
+    r.field = f.key; r.label = f.label; r.critical = f.critical;
+    r.rc = rc[f.key] || ""; r.bol = bol[f.key] || "";
+    rows.push(r);
+    if (r.status === "mismatch") {
+      if (f.critical) {
+        score -= 45; hasFail = true;
+        reasons.push({ level: "crit", text: "<b>" + f.label + " mismatch.</b> " + WHY[f.key] });
+      } else {
+        score -= 12; hasCaution = true;
+        reasons.push({ level: "warn", text: "<b>" + f.label + " mismatch.</b> " + WHY[f.key] });
+      }
+    } else if (r.status === "partial") {
+      if (f.critical) {
+        score -= 20; hasCaution = true;
+        reasons.push({ level: "warn", text: "<b>" + f.label + " is similar but not identical.</b> " + r.note + ". A near-match name can be an innocent suffix difference, or a lookalike company trading on a real name. Verify the exact legal name against the MC on the rate con." });
+      } else {
+        score -= 6; hasCaution = true;
+        reasons.push({ level: "warn", text: "<b>" + f.label + " partly matches.</b> " + r.note + ". Worth a confirmation call before pickup." });
+      }
+    } else if (r.status === "missing") {
+      var oneSide = (String(rc[f.key] || "").trim() !== "") !== (String(bol[f.key] || "").trim() !== "");
+      if (oneSide) {
+        score -= f.critical ? 15 : 4;
+        if (f.critical) hasCaution = true;
+        reasons.push({ level: "warn", text: "<b>" + f.label + " is missing on one document.</b> Identity fields should appear on both. An absent MC or DOT number removes the fastest way to confirm who you are actually dealing with." });
+      }
+    }
+  });
+  var flagPenalty = Math.min((checkedFlags || []).length * 4, 20);
+  if (flagPenalty) {
+    score -= flagPenalty;
+    if ((checkedFlags || []).length >= 2) hasCaution = true;
+    (checkedFlags || []).forEach(function (fl) {
+      reasons.push({ level: "warn", text: "<b>Red flag ticked: " + fl.title + ".</b> " + fl.desc });
+    });
+  }
+  score = Math.max(0, Math.min(100, Math.round(score)));
+  var verdict = hasFail ? "FAIL" : (hasCaution || score < 85 ? "CAUTION" : "PASS");
+  if (!reasons.length) {
+    reasons.push({ level: "ok", text: "<b>Core identity fields line up.</b> Company, MC and DOT agree across both documents, and no red flags were ticked. This check compares paperwork only, it does not verify FMCSA authority. For that, run the MC through SAFER." });
+  }
+  return { rows: rows, score: score, verdict: verdict, reasons: reasons };
+}
+</script>
+<script>
+"use strict";
+/* UI wiring. State lives in localStorage under rcs_ keys only. */
+var LS_INPUTS = "rcs_inputs_v1";
+var LS_HISTORY = "rcs_history_v1";
+var extracted = { rc: null, bol: null };
+var lastResult = null;
+
+function el(id) { return document.getElementById(id); }
+
+function buildFields(prefix, containerId) {
+  var c = el(containerId);
+  FIELDS.forEach(function (f) {
+    var wrap = document.createElement("div");
+    if (f.key === "company" || f.key === "address") wrap.className = "span-2";
+    var lab = document.createElement("label");
+    lab.setAttribute("for", prefix + "-" + f.key);
+    lab.textContent = f.label + (f.critical ? " (identity)" : "");
+    var inp = document.createElement("input");
+    inp.type = "text";
+    inp.id = prefix + "-" + f.key;
+    inp.autocomplete = "off";
+    inp.placeholder = f.key === "rate" ? "e.g. 2850" : (f.key === "mc" ? "e.g. 123456" : "");
+    inp.addEventListener("input", persistInputs);
+    wrap.appendChild(lab);
+    wrap.appendChild(inp);
+    c.appendChild(wrap);
+  });
+}
+
+function buildFlags() {
+  var c = el("flags");
+  FLAG_DEFS.forEach(function (fl) {
+    var lab = document.createElement("label");
+    lab.className = "flag";
+    var cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.id = "flag-" + fl.id;
+    cb.addEventListener("change", persistInputs);
+    var div = document.createElement("div");
+    var t = document.createElement("div"); t.className = "ft"; t.textContent = fl.title;
+    var d = document.createElement("div"); d.className = "fd"; d.textContent = fl.desc;
+    div.appendChild(t); div.appendChild(d);
+    lab.appendChild(cb); lab.appendChild(div);
+    c.appendChild(lab);
+  });
+}
+
+function readDoc(prefix) {
+  var doc = {};
+  FIELDS.forEach(function (f) { doc[f.key] = el(prefix + "-" + f.key).value.trim(); });
+  return doc;
+}
+
+function writeDoc(prefix, doc) {
+  FIELDS.forEach(function (f) { el(prefix + "-" + f.key).value = doc[f.key] || ""; });
+}
+
+function checkedFlags() {
+  return FLAG_DEFS.filter(function (fl) { return el("flag-" + fl.id).checked; });
+}
+
+function persistInputs() {
+  try {
+    localStorage.setItem(LS_INPUTS, JSON.stringify({
+      rc: readDoc("rc"), bol: readDoc("bol"),
+      rcPaste: el("rc-paste").value, bolPaste: el("bol-paste").value,
+      flags: checkedFlags().map(function (f) { return f.id; })
+    }));
+  } catch (e) { /* storage unavailable, session still works */ }
+}
+
+function restoreInputs() {
+  try {
+    var raw = localStorage.getItem(LS_INPUTS);
+    if (!raw) return;
+    var d = JSON.parse(raw);
+    if (d.rc) writeDoc("rc", d.rc);
+    if (d.bol) writeDoc("bol", d.bol);
+    if (d.rcPaste) { el("rc-paste").value = d.rcPaste; onPaste("rc"); }
+    if (d.bolPaste) { el("bol-paste").value = d.bolPaste; onPaste("bol"); }
+    (d.flags || []).forEach(function (id) { var cb = el("flag-" + id); if (cb) cb.checked = true; });
+  } catch (e) { /* ignore corrupt state */ }
+}
+
+function onPaste(prefix) {
+  var text = el(prefix + "-paste").value;
+  var ex = extractFields(text);
+  extracted[prefix] = ex;
+  var box = el(prefix + "-extract-box");
+  var chips = el(prefix + "-chips");
+  chips.innerHTML = "";
+  var any = false;
+  [["MC", ex.mc], ["DOT", ex.dot], ["Rate $", ex.money], ["Phone", ex.phone], ["Email", ex.email], ["ZIP", ex.zip], ["State", ex.state]].forEach(function (pair) {
+    if (!pair[1]) return;
+    any = true;
+    var chip = document.createElement("span");
+    chip.className = "chip";
+    chip.innerHTML = "<b>" + pair[0] + "</b> " + pair[1];
+    chips.appendChild(chip);
+  });
+  box.className = "extract-box" + (any ? " show" : "");
+  if (!text) box.className = "extract-box";
+  persistInputs();
+}
+
+function applyExtracted(prefix) {
+  var ex = extracted[prefix];
+  if (!ex) return;
+  function fill(key, val) {
+    var inp = el(prefix + "-" + key);
+    if (inp && !inp.value.trim() && val) inp.value = val;
+  }
+  fill("mc", ex.mc);
+  fill("dot", ex.dot);
+  fill("rate", ex.money);
+  fill("phone", ex.phone);
+  fill("email", ex.email);
+  if (ex.zip) {
+    var addr = el(prefix + "-address");
+    if (addr && !addr.value.trim()) addr.value = (ex.state ? ", " + ex.state + " " : "") + ex.zip;
+  }
+  persistInputs();
+}
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function statusPill(st) {
+  var label = st === "match" ? "Match" : st === "mismatch" ? "Mismatch" : st === "partial" ? "Caution" : "Missing";
+  return '<span class="status ' + st + '">' + label + "</span>";
+}
+
+function runCompare(save) {
+  var rc = readDoc("rc");
+  var bol = readDoc("bol");
+  var flags = checkedFlags();
+  var res = compareDocs(rc, bol, flags);
+  lastResult = { rc: rc, bol: bol, flags: flags, res: res, ts: new Date().toISOString() };
+  var box = el("verdict-box");
+  box.className = "verdict show " + res.verdict.toLowerCase();
+  el("v-score").textContent = res.score;
+  el("v-band").textContent = res.verdict;
+  el("v-sub").textContent =
+    res.verdict === "PASS" ? "Core identity fields agree across both documents. This is a paperwork comparison only, not an FMCSA authority check." :
+    res.verdict === "CAUTION" ? "No fatal identity mismatch, but items below need a confirmation call before pickup. Caution is where most double brokering hides." :
+    "A core identity field disagrees across the documents. Do not load until the broker on the rate con confirms, on a number you already trust, why the paperwork names two identities.";
+  var ul = el("v-reasons");
+  ul.innerHTML = "";
+  res.reasons.forEach(function (r) {
+    var li = document.createElement("li");
+    li.className = r.level === "crit" ? "crit" : r.level === "ok" ? "ok" : "";
+    li.innerHTML = r.text;
+    ul.appendChild(li);
+  });
+  var tb = el("v-table");
+  tb.innerHTML = "";
+  res.rows.forEach(function (r) {
+    var tr = document.createElement("tr");
+    tr.innerHTML = "<td><b>" + esc(r.label) + "</b>" + (r.note ? '<div class="hint">' + esc(r.note) + "</div>" : "") + "</td>" +
+      '<td class="val">' + esc(r.rc || "(blank)") + "</td>" +
+      '<td class="val">' + esc(r.bol || "(blank)") + "</td>" +
+      "<td>" + statusPill(r.status) + "</td>";
+    tb.appendChild(tr);
+  });
+  buildPrintReport();
+  box.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (save !== false) saveHistory();
+}
+
+function docTable(title, doc) {
+  var rows = FIELDS.map(function (f) {
+    return "<tr><td>" + esc(f.label) + "</td><td>" + esc(doc[f.key] || "(blank)") + "</td></tr>";
+  }).join("");
+  return "<h2>" + esc(title) + "</h2><table>" + rows + "</table>";
+}
+
+function buildPrintReport() {
+  if (!lastResult) return;
+  var r = lastResult;
+  var cmpRows = r.res.rows.map(function (row) {
+    var st = row.status === "match" ? "Match" : row.status === "mismatch" ? "MISMATCH" : row.status === "partial" ? "Caution" : "Missing";
+    return "<tr><td>" + esc(row.label) + "</td><td>" + esc(row.rc || "(blank)") + "</td><td>" + esc(row.bol || "(blank)") + "</td><td>" + st + (row.note ? " (" + esc(row.note) + ")" : "") + "</td></tr>";
+  }).join("");
+  var flagHtml = r.flags.length
+    ? "<ul>" + r.flags.map(function (f) { return "<li>" + esc(f.title) + ": " + esc(f.desc) + "</li>"; }).join("") + "</ul>"
+    : "<p>No red flags were ticked for this check.</p>";
+  var reasonHtml = "<ul>" + r.res.reasons.map(function (x) { return "<li>" + x.text.replace(/<[^>]+>/g, "") + "</li>"; }).join("") + "</ul>";
+  el("print-report").innerHTML =
+    "<h1>RateCon Shield Verification Report</h1>" +
+    "<p>Checked: " + esc(new Date(r.ts).toLocaleString()) + "</p>" +
+    '<p class="verdict-line">Verdict: ' + r.res.verdict + " (" + r.res.score + " / 100)</p>" +
+    docTable("Rate Confirmation", r.rc) +
+    docTable("BOL / Load Details", r.bol) +
+    "<h2>Field by field comparison</h2><table><tr><th>Field</th><th>Rate Confirmation</th><th>BOL / Load Details</th><th>Status</th></tr>" + cmpRows + "</table>" +
+    "<h2>Why it matters</h2>" + reasonHtml +
+    "<h2>Red flags ticked</h2>" + flagHtml +
+    "<p>This report compares the paperwork the user entered or pasted. It does not verify FMCSA authority or insurance. For authority checks, use SAFER.</p>" +
+    '<div class="foot">Checked locally with RateCon Shield, no data left this device.<br>RateCon Shield v1.0.0, Dispatch Authority.</div>';
+}
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(LS_HISTORY) || "[]"); } catch (e) { return []; }
+}
+
+function saveHistory() {
+  if (!lastResult) return;
+  var h = loadHistory();
+  h.unshift({
+    ts: lastResult.ts,
+    rcCompany: lastResult.rc.company, bolCompany: lastResult.bol.company,
+    loadRef: lastResult.rc.loadRef || lastResult.bol.loadRef || "",
+    score: lastResult.res.score, verdict: lastResult.res.verdict,
+    flags: lastResult.flags.length
+  });
+  try { localStorage.setItem(LS_HISTORY, JSON.stringify(h.slice(0, 100))); } catch (e) { /* ignore */ }
+  renderHistory();
+}
+
+function renderHistory() {
+  var list = el("history-list");
+  var h = loadHistory();
+  list.innerHTML = "";
+  if (!h.length) {
+    list.innerHTML = '<div class="empty">No checks saved yet. Run a comparison and it will appear here.</div>';
+    return;
+  }
+  h.forEach(function (item) {
+    var row = document.createElement("div");
+    row.className = "hist-row";
+    var color = item.verdict === "PASS" ? "var(--green)" : item.verdict === "CAUTION" ? "var(--amber)" : "var(--red)";
+    row.innerHTML =
+      "<div><div class=\"who\">" + esc(item.rcCompany || "Unnamed rate con") + " vs " + esc(item.bolCompany || "Unnamed BOL") + "</div>" +
+      '<div class="meta">' + esc(new Date(item.ts).toLocaleString()) + (item.loadRef ? " , Load " + esc(item.loadRef) : "") + ", " + item.flags + " red flag(s)</div></div>" +
+      '<div class="hist-score" style="color:' + color + '">' + item.verdict + " " + item.score + "/100</div>";
+    list.appendChild(row);
+  });
+}
+
+function exportCSV() {
+  var h = loadHistory();
+  var lines = ["timestamp,rate_con_company,bol_company,load_ref,score,verdict,red_flags"];
+  h.forEach(function (i) {
+    function q(v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }
+    lines.push([q(i.ts), q(i.rcCompany), q(i.bolCompany), q(i.loadRef), i.score, q(i.verdict), i.flags].join(","));
+  });
+  var blob = new Blob([lines.join("\n")], { type: "text/csv" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "ratecon-shield-history.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+}
+
+var DEMO_MATCH = {
+  rc: { company: "Summit Ridge Logistics LLC", mc: "765432", dot: "2987654", address: "1200 Commerce St, Dallas, TX 75202", phone: "214-555-0184", email: "dispatch@summitridgelogistics.com", loadRef: "SR-88412", rate: "2850", pickup: "Dallas, TX", delivery: "Atlanta, GA" },
+  bol: { company: "Summit Ridge Logistics Inc", mc: "765432", dot: "2987654", address: "1200 Commerce St, Dallas, TX 75202", phone: "(214) 555-0184", email: "dispatch@summitridgelogistics.com", loadRef: "SR-88412", rate: "$2,850.00", pickup: "Dallas, TX", delivery: "Atlanta, GA" }
+};
+
+var DEMO_MISMATCH = {
+  rc: { company: "Summit Ridge Logistics LLC", mc: "765432", dot: "2987654", address: "1200 Commerce St, Dallas, TX 75202", phone: "214-555-0184", email: "dispatch@summitridgelogistics.com", loadRef: "SR-88412", rate: "2850", pickup: "Dallas, TX", delivery: "Atlanta, GA" },
+  bol: { company: "Quick Haul Partners LLC", mc: "1188450", dot: "3711209", address: "88 Industrial Pkwy, Houston, TX 77032", phone: "832-555-0117", email: "bookings.quickhaul@gmail.com", loadRef: "QH-2210", rate: "2100", pickup: "Dallas, TX", delivery: "Memphis, TN" }
+};
+
+function loadDemo(which) {
+  var d = which === "match" ? DEMO_MATCH : DEMO_MISMATCH;
+  writeDoc("rc", d.rc);
+  writeDoc("bol", d.bol);
+  FLAG_DEFS.forEach(function (fl) { el("flag-" + fl.id).checked = false; });
+  if (which === "mismatch") {
+    el("flag-freeemail").checked = true;
+    el("flag-pressure").checked = true;
+  }
+  el("demo-note").className = "demo-note show";
+  persistInputs();
+  runCompare(true);
+}
+
+function clearForms() {
+  writeDoc("rc", {});
+  writeDoc("bol", {});
+  el("rc-paste").value = "";
+  el("bol-paste").value = "";
+  onPaste("rc"); onPaste("bol");
+  FLAG_DEFS.forEach(function (fl) { el("flag-" + fl.id).checked = false; });
+  el("demo-note").className = "demo-note";
+  el("verdict-box").className = "verdict";
+  lastResult = null;
+  persistInputs();
+}
+
+function init() {
+  buildFields("rc", "rc-fields");
+  buildFields("bol", "bol-fields");
+  buildFlags();
+  el("rc-paste").addEventListener("input", function () { onPaste("rc"); });
+  el("bol-paste").addEventListener("input", function () { onPaste("bol"); });
+  el("rc-apply").addEventListener("click", function () { applyExtracted("rc"); });
+  el("bol-apply").addEventListener("click", function () { applyExtracted("bol"); });
+  el("btn-compare").addEventListener("click", function () { runCompare(true); });
+  el("btn-clear-forms").addEventListener("click", clearForms);
+  el("btn-demo-match").addEventListener("click", function () { loadDemo("match"); });
+  el("btn-demo-mismatch").addEventListener("click", function () { loadDemo("mismatch"); });
+  function doPrint() {
+    if (!lastResult) runCompare(false);
+    buildPrintReport();
+    window.print();
+  }
+  el("btn-print").addEventListener("click", doPrint);
+  el("btn-print-top").addEventListener("click", doPrint);
+  el("btn-csv").addEventListener("click", exportCSV);
+  el("btn-clear-history").addEventListener("click", function () {
+    if (confirm("Clear all saved check history from this browser?")) {
+      localStorage.removeItem(LS_HISTORY);
+      renderHistory();
+    }
+  });
+  el("btn-scroll-compare").addEventListener("click", function () {
+    el("docs").scrollIntoView({ behavior: "smooth" });
+  });
+  restoreInputs();
+  renderHistory();
+}
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body></html>

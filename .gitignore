@@ -1,0 +1,19 @@
+# OS noise
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor noise
+.vscode/
+.idea/
+*.swp
+*~
+
+# Local exports and working files (RateCon Shield history lives in the browser,
+# exported CSVs are the user's records and should not be committed by accident)
+*.csv
+ratecon-shield-history*.csv
+
+# Node, only if tests or tooling are added later
+node_modules/
+test-results/
